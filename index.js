@@ -14,15 +14,21 @@ app.get('/', (req, res) => {
 })
 
 
+// Validador de ID (Principio SRP)
+const isValidId = (id) => !isNaN(id) && Number.isInteger(Number(id));
+
+// Búsqueda de usuario (Principio SRP)
+const findUserById = (userId) => users.find(u => u.id === userId);
+
 app.get('/about/:id', (req, res) => {
     const userId = req.params.id;
 
-    if (!userId) {
-        res.status(400).send({ error: "Missing id" });
+    if (!isValidId(userId)) {
+        res.status(400).send({ error: "Invalid id format" });
         return;
     }
 
-    const user = users.find(u => u.id === parseInt(userId));
+    const user = findUserById(parseInt(userId));
 
     if (!user) {
         res.status(404).send({ error: "User not found" });
