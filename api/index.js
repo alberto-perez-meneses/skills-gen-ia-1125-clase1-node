@@ -1,7 +1,7 @@
 const express = require('express')
 const app = express()
 const port = 3000
-const reverseString = require('./lib/string').reverseString;
+const { reverseString, isValidId, findUserById } = require('./lib/string');
 
 const users = [
     { id: 1, name: 'Alice' },
@@ -13,13 +13,6 @@ app.get('/', (req, res) => {
     res.send('Hello World!')
 })
 
-
-// Validador de ID (Principio SRP)
-const isValidId = (id) => !isNaN(id) && Number.isInteger(Number(id));
-
-// Búsqueda de usuario (Principio SRP)
-const findUserById = (userId) => users.find(u => u.id === userId);
-
 app.get('/about/:id', (req, res) => {
     const userId = req.params.id;
 
@@ -28,7 +21,7 @@ app.get('/about/:id', (req, res) => {
         return;
     }
 
-    const user = findUserById(parseInt(userId));
+    const user = findUserById(users, parseInt(userId));
 
     if (!user) {
         res.status(404).send({ error: "User not found" });
