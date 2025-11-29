@@ -7,12 +7,13 @@ WORKDIR /app
 # Copy package files
 COPY package.json package-lock.json ./
 
-# Install production dependencies only
-RUN npm ci --only=production
+# Install all dependencies
+RUN npm i
 
 # Copy application code
 COPY index.js ./
 COPY lib/ ./lib/
+COPY src/ ./src/
 
 # Expose the port the app runs on
 EXPOSE 3000

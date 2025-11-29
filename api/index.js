@@ -1,19 +1,17 @@
 const express = require('express')
 const app = express()
 const port = 3000
-const { reverseString, isValidId, findUserById } = require('./lib/string');
+const { reverseString, isValidId } = require('./lib/string');
+const RepositoryFactory = require('./src/repositories');
 
-const users = [
-    { id: 1, name: 'Alice' },
-    { id: 2, name: 'Bob' },
-    { id: 3, name: 'Charlie' }
-];
+// Crear instancia del repositorio usando Dependency Inversion
+const userRepository = RepositoryFactory.create('sequelize');
 
 app.get('/', (req, res) => {
     res.send('Hello World!')
 })
 
-app.get('/about/:id', (req, res) => {
+app.get('/about/:id', async (req, res) => {
     const userId = req.params.id;
 
     if (!isValidId(userId)) {
@@ -21,14 +19,17 @@ app.get('/about/:id', (req, res) => {
         return;
     }
 
-    const user = findUserById(users, parseInt(userId));
+    // Usar el repositorio para buscar el usuario en la base de datos
+    const users = await userRepository.findUserById(parseInt(userId));
 
-    if (!user) {
+    // findUserById retorna un array: con datos si existe, vacío si no existe
+    if (users.length === 0) {
         res.status(404).send({ error: "User not found" });
         return;
     }
 
-    res.send(user);
+    // Retornar el primer elemento del array (el usuario encontrado)
+    res.send(users[0]);
 })
 
 app.get('/reverse/:str', (req, res) => {
@@ -39,6 +40,19 @@ app.get('/reverse/:str', (req, res) => {
 
 
 
+
+// Manejar cierre graceful de la aplicación
+process.on('SIGINT', async () => {
+    console.log('\nClosing database connection...');
+    await userRepository.disconnect();
+    process.exit(0);
+});
+
+process.on('SIGTERM', async () => {
+    console.log('\nClosing database connection...');
+    await userRepository.disconnect();
+    process.exit(0);
+});
 
 if (require.main === module) {
     app.listen(port, () => {
