@@ -1,0 +1,23 @@
+# Use Node.js LTS Alpine for a lightweight production image
+FROM node:20-alpine
+
+# Set working directory
+WORKDIR /app
+
+# Copy package files
+COPY package.json package-lock.json ./
+
+# Install all dependencies
+RUN npm i
+
+# Copy application code
+COPY index.js ./
+COPY lib/ ./lib/
+COPY src/ ./src/
+
+# Expose the port the app runs on
+EXPOSE 3000
+
+# Start the application
+CMD ["npm", "start"]
+
