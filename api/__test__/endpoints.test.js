@@ -1,41 +1,38 @@
 const request = require('supertest');
 
-// MOCK: Reemplazamos completamente el RepositoryFactory antes de importar index.js
-// Razón: Necesitamos interceptar la creación del repositorio para inyectar un mock
-// en lugar de la implementación real de Sequelize que requiere conexión a BD
-const mockRepository = {
-    findUserById: jest.fn(), // STUB: Se configurará con datos fijos en cada test
-    disconnect: jest.fn() // Mock para evitar llamadas reales de desconexión
+// Mock del repositorio antes de importar la aplicación
+const mockUserRepository = {
+    findUserById: jest.fn(),
+    disconnect: jest.fn()
 };
 
+// Mock del RepositoryFactory como clase con método estático
 jest.mock('../src/repositories', () => {
-    // Creamos una clase mock que simula RepositoryFactory con método estático create
     class MockRepositoryFactory {
         static create() {
-            return mockRepository; // Retorna siempre el mismo mock
+            return mockUserRepository;
         }
     }
     return MockRepositoryFactory;
 });
 
-// Importamos la app DESPUÉS del mock para que use el RepositoryFactory mockeado
-const app = require('../index');
+const app = require('../index'); // Importamos tu aplicación después de configurar los mocks
 
 describe('API Endpoints', () => {
-    // Setup: Limpiamos las llamadas del mock antes de cada test
+    
+    // Limpiar mocks entre tests
     beforeEach(() => {
-        jest.clearAllMocks(); // Limpiamos llamadas anteriores
+        jest.clearAllMocks();
     });
 
     // Prueba para la ruta raíz
     test('GET / debe retornar Hello World!', async () => {
         // Arrange
-        const route = '/';
         const expectedStatusCode = 200;
         const expectedText = 'Hello World!';
         
         // Act
-        const response = await request(app).get(route);
+        const response = await request(app).get('/');
         
         // Assert
         expect(response.statusCode).toBe(expectedStatusCode);
@@ -46,165 +43,274 @@ describe('API Endpoints', () => {
     test('GET /about/:id debe retornar un usuario existente (Alice)', async () => {
         // Arrange
         const userId = 1;
-        const route = `/about/${userId}`;
         const expectedStatusCode = 200;
         const expectedUser = { id: 1, name: 'Alice' };
         
-        // STUB: Configuramos findUserById para retornar datos fijos
-        // Razón: Necesitamos datos predecibles sin ejecutar la lógica real de BD
-        mockRepository.findUserById.mockResolvedValue([expectedUser]);
-        
-        // SPY: Observamos las llamadas al método (ya está configurado como jest.fn())
-        // Razón: Validaremos que se llamó con el ID parseado correctamente
+        // STUB: Simular respuesta de la base de datos con datos fijos
+        mockUserRepository.findUserById.mockResolvedValue([expectedUser]);
         
         // Act
-        const response = await request(app).get(route);
+        const response = await request(app).get(`/about/${userId}`);
         
         // Assert
         expect(response.statusCode).toBe(expectedStatusCode);
         expect(response.body).toEqual(expectedUser);
         
-        // SPY: Validamos que findUserById fue llamado con el ID correcto (parseado a número)
-        expect(mockRepository.findUserById).toHaveBeenCalledTimes(1);
-        expect(mockRepository.findUserById).toHaveBeenCalledWith(userId);
+        // MOCK: Validar que se llamó al repositorio con el parámetro correcto
+        expect(mockUserRepository.findUserById).toHaveBeenCalledWith(userId);
+        expect(mockUserRepository.findUserById).toHaveBeenCalledTimes(1);
     });
 
     // Prueba para un usuario que no existe
     test('GET /about/:id debe retornar 404 si el usuario no existe', async () => {
         // Arrange
         const nonExistentUserId = 999;
-        const route = `/about/${nonExistentUserId}`;
         const expectedStatusCode = 404;
         const expectedError = { error: "User not found" };
         
-        // STUB: Configuramos findUserById para retornar array vacío (usuario no encontrado)
-        // Razón: Simulamos el comportamiento de BD cuando no existe el usuario
-        mockRepository.findUserById.mockResolvedValue([]);
+        // STUB: Simular que la base de datos no encuentra el usuario (array vacío)
+        mockUserRepository.findUserById.mockResolvedValue([]);
         
         // Act
-        const response = await request(app).get(route);
+        const response = await request(app).get(`/about/${nonExistentUserId}`);
         
         // Assert
         expect(response.statusCode).toBe(expectedStatusCode);
         expect(response.body).toEqual(expectedError);
         
-        // SPY: Validamos que se intentó buscar el usuario
-        expect(mockRepository.findUserById).toHaveBeenCalledTimes(1);
-        expect(mockRepository.findUserById).toHaveBeenCalledWith(nonExistentUserId);
+        // MOCK: Validar que se llamó al repositorio con el parámetro correcto
+        expect(mockUserRepository.findUserById).toHaveBeenCalledWith(nonExistentUserId);
+        expect(mockUserRepository.findUserById).toHaveBeenCalledTimes(1);
     });
 
     // Prueba opcional: verificar tipos de datos
     test('GET /about/:id debe retornar JSON', async () => {
         // Arrange
         const userId = 2;
-        const route = `/about/${userId}`;
         const expectedContentType = 'application/json';
         const expectedUserName = 'Bob';
         const expectedUser = { id: 2, name: 'Bob' };
         
-        // STUB: Configuramos findUserById para retornar usuario Bob
-        mockRepository.findUserById.mockResolvedValue([expectedUser]);
+        // STUB: Simular respuesta de la base de datos con datos fijos
+        mockUserRepository.findUserById.mockResolvedValue([expectedUser]);
         
         // Act
-        const response = await request(app).get(route);
+        const response = await request(app).get(`/about/${userId}`);
         
         // Assert
         expect(response.type).toBe(expectedContentType);
         expect(response.body.name).toBe(expectedUserName);
         
-        // SPY: Validamos la interacción
-        expect(mockRepository.findUserById).toHaveBeenCalledWith(userId);
+        // MOCK: Validar que se llamó al repositorio con el parámetro correcto
+        expect(mockUserRepository.findUserById).toHaveBeenCalledWith(userId);
+        expect(mockUserRepository.findUserById).toHaveBeenCalledTimes(1);
     });
 
     // Edge case: id no numérico -> 400
     test('GET /about/:id debe retornar 400 para id no numérico', async () => {
         // Arrange
         const invalidId = 'abc';
-        const route = `/about/${invalidId}`;
         const expectedStatusCode = 400;
         const expectedError = { error: "Invalid id format" };
         
-        // NOTA: No configuramos stub porque isValidId() rechaza antes de llamar a BD
-        // El método findUserById NO debería ser llamado en este caso
-        
         // Act
-        const response = await request(app).get(route);
+        const response = await request(app).get(`/about/${invalidId}`);
         
         // Assert
         expect(response.statusCode).toBe(expectedStatusCode);
         expect(response.body).toEqual(expectedError);
         
-        // SPY: Validamos que findUserById NO fue llamado (validación previa rechazó el ID)
-        expect(mockRepository.findUserById).not.toHaveBeenCalled();
+        // MOCK: Validar que el repositorio NO fue llamado (validación falló antes)
+        expect(mockUserRepository.findUserById).not.toHaveBeenCalled();
     });
 
     // Edge case: id decimal (no entero) -> 400
     test('GET /about/:id debe retornar 400 para id decimal', async () => {
         // Arrange
         const decimalId = '1.5';
-        const route = `/about/${decimalId}`;
         const expectedStatusCode = 400;
         const expectedError = { error: "Invalid id format" };
         
-        // NOTA: No configuramos stub porque isValidId() rechaza antes de llamar a BD
-        
         // Act
-        const response = await request(app).get(route);
+        const response = await request(app).get(`/about/${decimalId}`);
         
         // Assert
         expect(response.statusCode).toBe(expectedStatusCode);
         expect(response.body).toEqual(expectedError);
         
-        // SPY: Validamos que findUserById NO fue llamado
-        expect(mockRepository.findUserById).not.toHaveBeenCalled();
+        // MOCK: Validar que el repositorio NO fue llamado (validación falló antes)
+        expect(mockUserRepository.findUserById).not.toHaveBeenCalled();
     });
 
     // Edge case: cadena numérica con punto pero equivalente a entero '2.0' -> válido
     test('GET /about/:id acepta "2.0" y retorna usuario Bob', async () => {
         // Arrange
         const validDecimalId = '2.0';
-        const route = `/about/${validDecimalId}`;
         const expectedStatusCode = 200;
         const expectedUser = { id: 2, name: 'Bob' };
-        const parsedUserId = 2; // El ID se parsea a 2
         
-        // STUB: Configuramos findUserById para retornar usuario Bob
-        // Nota: El ID se parsea a número antes de llamar a findUserById
-        mockRepository.findUserById.mockResolvedValue([expectedUser]);
+        // STUB: Simular respuesta de la base de datos con datos fijos
+        mockUserRepository.findUserById.mockResolvedValue([expectedUser]);
         
         // Act
-        const response = await request(app).get(route);
+        const response = await request(app).get(`/about/${validDecimalId}`);
         
         // Assert
         expect(response.statusCode).toBe(expectedStatusCode);
         expect(response.body).toEqual(expectedUser);
         
-        // SPY: Validamos que se llamó con el ID parseado (2, no "2.0")
-        expect(mockRepository.findUserById).toHaveBeenCalledTimes(1);
-        expect(mockRepository.findUserById).toHaveBeenCalledWith(parsedUserId);
+        // MOCK: Validar que se llamó al repositorio con el id parseado correctamente (2)
+        expect(mockUserRepository.findUserById).toHaveBeenCalledWith(2);
+        expect(mockUserRepository.findUserById).toHaveBeenCalledTimes(1);
     });
 
     // Edge case: id negativo válido numéricamente pero no existe -> 404
     test('GET /about/:id debe retornar 404 para id negativo', async () => {
         // Arrange
         const negativeId = '-1';
-        const route = `/about/${negativeId}`;
         const expectedStatusCode = 404;
         const expectedError = { error: "User not found" };
-        const parsedUserId = -1; // El ID se parsea a -1
         
-        // STUB: Configuramos findUserById para retornar array vacío (usuario no encontrado)
-        mockRepository.findUserById.mockResolvedValue([]);
+        // STUB: Simular que la base de datos no encuentra el usuario (array vacío)
+        mockUserRepository.findUserById.mockResolvedValue([]);
         
         // Act
-        const response = await request(app).get(route);
+        const response = await request(app).get(`/about/${negativeId}`);
         
         // Assert
         expect(response.statusCode).toBe(expectedStatusCode);
         expect(response.body).toEqual(expectedError);
         
-        // SPY: Validamos que se intentó buscar con el ID negativo parseado
-        expect(mockRepository.findUserById).toHaveBeenCalledTimes(1);
-        expect(mockRepository.findUserById).toHaveBeenCalledWith(parsedUserId);
+        // MOCK: Validar que se llamó al repositorio con el id parseado correctamente (-1)
+        expect(mockUserRepository.findUserById).toHaveBeenCalledWith(-1);
+        expect(mockUserRepository.findUserById).toHaveBeenCalledTimes(1);
+    });
+
+    // Pruebas para el endpoint /reverse/:str
+    test('GET /reverse/:str debe invertir una cadena normal', async () => {
+        // Arrange
+        const input = 'hello';
+        const expectedStatusCode = 200;
+        const expectedResponse = { original: 'hello', reversed: 'olleh' };
+        
+        // Act
+        const response = await request(app).get(`/reverse/${input}`);
+        
+        // Assert
+        expect(response.statusCode).toBe(expectedStatusCode);
+        expect(response.body).toEqual(expectedResponse);
+    });
+
+    test('GET /reverse/:str debe retornar cadena vacía cuando se pasa cadena vacía', async () => {
+        // Arrange
+        const input = '';
+        const expectedStatusCode = 404;
+        const expectedResponse = { original: '', reversed: '' };
+        
+        // Act
+        const response = await request(app).get(`/reverse/${input}`);
+        
+        // Assert
+        expect(response.statusCode).toBe(expectedStatusCode);
+    });
+
+    test('GET /reverse/:str debe retornar el mismo carácter cuando se pasa un solo carácter', async () => {
+        // Arrange
+        const input = 'a';
+        const expectedStatusCode = 200;
+        const expectedResponse = { original: 'a', reversed: 'a' };
+        
+        // Act
+        const response = await request(app).get(`/reverse/${input}`);
+        
+        // Assert
+        expect(response.statusCode).toBe(expectedStatusCode);
+        expect(response.body).toEqual(expectedResponse);
+    });
+
+    test('GET /reverse/:str debe invertir una cadena con espacios', async () => {
+        // Arrange
+        const input = 'hello world';
+        const expectedStatusCode = 200;
+        const expectedResponse = { original: 'hello world', reversed: 'dlrow olleh' };
+        
+        // Act
+        const response = await request(app).get(`/reverse/${input}`);
+        
+        // Assert
+        expect(response.statusCode).toBe(expectedStatusCode);
+        expect(response.body).toEqual(expectedResponse);
+    });
+
+    test('GET /reverse/:str debe invertir una cadena con caracteres especiales', async () => {
+        // Arrange
+        const input = 'a!b@c#';
+        const expectedStatusCode = 200;
+        const expectedResponse = { original: 'a!b@c', reversed: 'c@b!a' };
+        
+
+        // Act
+        const response = await request(app).get(`/reverse/${input}`);
+        
+        // Assert
+        expect(response.statusCode).toBe(expectedStatusCode);
+        expect(response.body).toEqual(expectedResponse);
+    });
+
+    test('GET /reverse/:str debe invertir una cadena numérica', async () => {
+        // Arrange
+        const input = '123';
+        const expectedStatusCode = 200;
+        const expectedResponse = { original: '123', reversed: '321' };
+        
+        // Act
+        const response = await request(app).get(`/reverse/${input}`);
+        
+        // Assert
+        expect(response.statusCode).toBe(expectedStatusCode);
+        expect(response.body).toEqual(expectedResponse);
+    });
+
+    test('GET /reverse/:str debe invertir una cadena con mayúsculas y minúsculas', async () => {
+        // Arrange
+        const input = 'Hello';
+        const expectedStatusCode = 200;
+        const expectedResponse = { original: 'Hello', reversed: 'olleH' };
+        
+        // Act
+        const response = await request(app).get(`/reverse/${input}`);
+        
+        // Assert
+        expect(response.statusCode).toBe(expectedStatusCode);
+        expect(response.body).toEqual(expectedResponse);
+    });
+
+    test('GET /reverse/:str debe manejar caracteres codificados en URL', async () => {
+        // Arrange
+        const input = 'hello%20world';
+        const expectedStatusCode = 200;
+        const expectedResponse = { original: 'hello world', reversed: 'dlrow olleh' };
+        
+        // Act
+        const response = await request(app).get(`/reverse/${input}`);
+        // Assert
+        expect(response.statusCode).toBe(expectedStatusCode);
+        expect(response.body).toEqual(expectedResponse);
+    });
+
+    test('GET /reverse/:str debe retornar JSON', async () => {
+        // Arrange
+        const input = 'test';
+        const expectedStatusCode = 200;
+        const expectedContentType = 'application/json';
+        
+        // Act
+        const response = await request(app).get(`/reverse/${input}`);
+        
+        // Assert
+        expect(response.statusCode).toBe(expectedStatusCode);
+        expect(response.type).toBe(expectedContentType);
+        expect(response.body).toHaveProperty('original');
+        expect(response.body).toHaveProperty('reversed');
     });
 });
