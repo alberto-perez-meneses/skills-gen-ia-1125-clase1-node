@@ -1,12 +1,13 @@
+// step 1
 const MIN_HOUR = 0;
-const MAX_HOUR = 23;
+const MAX_HOUR = 24;
 const DAYLIGHT_START = 7;
 const DAYLIGHT_END = 17;
 
 function isValidHour(hour) {
         if (typeof hour !== 'number' || 
             !Number.isInteger(hour) ||
-             hour < MIN_HOUR || hour > MAX_HOUR) {
+             hour < MIN_HOUR || hour >= MAX_HOUR) {
             return false;
         }
         return true;
