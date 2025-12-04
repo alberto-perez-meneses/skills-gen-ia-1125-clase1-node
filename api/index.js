@@ -3,6 +3,7 @@ const app = express()
 const port = 3000
 const { reverseString, isValidId } = require('./lib/string');
 const RepositoryFactory = require('./src/repositories');
+const { setupGracefulShutdown } = require('./src/utils/graceful-shutdown');
 
 // Crear instancia del repositorio usando Dependency Inversion
 const userRepository = RepositoryFactory.create('sequelize');
@@ -42,17 +43,7 @@ app.get('/reverse/:str', (req, res) => {
 
 
 // Manejar cierre graceful de la aplicación
-process.on('SIGINT', async () => {
-    console.log('\nClosing database connection...');
-    await userRepository.disconnect();
-    process.exit(0);
-});
-
-process.on('SIGTERM', async () => {
-    console.log('\nClosing database connection...');
-    await userRepository.disconnect();
-    process.exit(0);
-});
+setupGracefulShutdown(userRepository);
 
 if (require.main === module) {
     app.listen(port, () => {
