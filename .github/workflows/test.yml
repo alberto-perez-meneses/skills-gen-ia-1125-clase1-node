@@ -29,22 +29,15 @@ jobs:
       working-directory: api
       continue-on-error: true
       
-    - name: Read test results
-      id: test-results
+    - name: Generate test report
       if: always()
       run: |
-        TEST_OUTPUT=$(cat api/test-results.txt)
-        echo "results<<EOF" >> $GITHUB_OUTPUT
-        echo "$TEST_OUTPUT" >> $GITHUB_OUTPUT
-        echo "EOF" >> $GITHUB_OUTPUT
-      
-    - name: Comment PR with test results
-      if: always()
-      uses: peter-evans/create-or-update-comment@v4
-      with:
-        issue-number: ${{ github.event.pull_request.number }}
-        body: |
-          ## 📊 Resultados de Pruebas Unitarias
-          
-          <details>
-          <summary>Ver resultados completos</summary>
+        mkdir -p .github/test-results
+        cat api/test-results.txt > .github/test-results/test-results.txt
+        echo "# 📊 Resultados de Pruebas Unitarias" > .github/test-results/README.md
+        echo "" >> .github/test-results/README.md
+        echo "Generado el: $(date)" >> .github/test-results/README.md
+        echo "" >> .github/test-results/README.md
+        echo "## Resultados Completos" >> .github/test-results/README.md
+        echo "" >> .github/test-results/README.md
+        echo '
