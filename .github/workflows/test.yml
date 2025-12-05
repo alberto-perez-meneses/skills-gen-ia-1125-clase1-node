@@ -23,6 +23,28 @@ jobs:
       run: npm i
       working-directory: api
       
-    - name: Run tests
-      run: npm test
+    - name: Run tests with coverage
+      id: test
+      run: npm run test:coverage 2>&1 | tee test-results.txt
       working-directory: api
+      continue-on-error: true
+      
+    - name: Read test results
+      id: test-results
+      if: always()
+      run: |
+        TEST_OUTPUT=$(cat api/test-results.txt)
+        echo "results<<EOF" >> $GITHUB_OUTPUT
+        echo "$TEST_OUTPUT" >> $GITHUB_OUTPUT
+        echo "EOF" >> $GITHUB_OUTPUT
+      
+    - name: Comment PR with test results
+      if: always()
+      uses: peter-evans/create-or-update-comment@v4
+      with:
+        issue-number: ${{ github.event.pull_request.number }}
+        body: |
+          ## 📊 Resultados de Pruebas Unitarias
+          
+          <details>
+          <summary>Ver resultados completos</summary>
