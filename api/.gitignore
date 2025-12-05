@@ -2,3 +2,7 @@
 /coverage/*
 .DS_Store   
 .env
+# stryker temp files
+.stryker-tmp
+
+reports/

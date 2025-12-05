@@ -5,12 +5,10 @@ const DAYLIGHT_START = 7;
 const DAYLIGHT_END = 17;
 
 function isValidHour(hour) {
-        if (typeof hour !== 'number' || 
-            !Number.isInteger(hour) ||
-             hour < MIN_HOUR || hour >= MAX_HOUR) {
-            return false;
-        }
-        return true;
+    const isNumber = typeof hour === 'number';
+    const isInteger = Number.isInteger(hour);
+    const isInRange = hour >= MIN_HOUR && hour <= MAX_HOUR;
+    return isNumber && isInteger && isInRange;
 }    
 
 function whatPartOfDay(hour) {
