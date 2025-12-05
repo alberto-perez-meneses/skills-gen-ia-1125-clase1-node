@@ -29,15 +29,24 @@ jobs:
       working-directory: api
       continue-on-error: true
       
-    - name: Generate test report
+    - name: Read test results
+      id: test-results
       if: always()
       run: |
-        mkdir -p .github/test-results
-        cat api/test-results.txt > .github/test-results/test-results.txt
-        echo "# 📊 Resultados de Pruebas Unitarias" > .github/test-results/README.md
-        echo "" >> .github/test-results/README.md
-        echo "Generado el: $(date)" >> .github/test-results/README.md
-        echo "" >> .github/test-results/README.md
-        echo "## Resultados Completos" >> .github/test-results/README.md
-        echo "" >> .github/test-results/README.md
-        echo '
+        TEST_OUTPUT=$(cat api/test-results.txt)
+        echo "results<<EOF" >> $GITHUB_OUTPUT
+        echo "$TEST_OUTPUT" >> $GITHUB_OUTPUT
+        echo "EOF" >> $GITHUB_OUTPUT
+      
+    - name: Generate test summary
+      if: always()
+      run: |
+        echo "# 📊 Resultados de Pruebas Unitarias" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "## Resumen de Ejecución" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo '```' >> $GITHUB_STEP_SUMMARY
+        cat api/test-results.txt >> $GITHUB_STEP_SUMMARY
+        echo '```' >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "_Generado el: $(date)_" >> $GITHUB_STEP_SUMMARY
