@@ -60,21 +60,33 @@ jobs:
     - name: Read mutation results
       id: mutation-results
       if: always()
+      continue-on-error: true
       run: |
-        MUTATION_OUTPUT=$(cat api/mutation-results.txt)
-        echo "mutation_results<<EOF" >> $GITHUB_OUTPUT
-        echo "$MUTATION_OUTPUT" >> $GITHUB_OUTPUT
-        echo "EOF" >> $GITHUB_OUTPUT
+        if [ -f api/mutation-results.txt ]; then
+          MUTATION_OUTPUT=$(cat api/mutation-results.txt)
+          echo "mutation_results<<EOF" >> $GITHUB_OUTPUT
+          echo "$MUTATION_OUTPUT" >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
+        else
+          echo "mutation_results<<EOF" >> $GITHUB_OUTPUT
+          echo "No se generaron resultados de mutation testing (el archivo no existe)" >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
+        fi
       
     - name: Generate mutation summary
       if: always()
+      continue-on-error: true
       run: |
         echo "# 🧬 Resultados de Pruebas de Mutación" >> $GITHUB_STEP_SUMMARY
         echo "" >> $GITHUB_STEP_SUMMARY
         echo "## Resumen de Ejecución" >> $GITHUB_STEP_SUMMARY
         echo "" >> $GITHUB_STEP_SUMMARY
         echo '```' >> $GITHUB_STEP_SUMMARY
-        cat api/mutation-results.txt >> $GITHUB_STEP_SUMMARY
+        if [ -f api/mutation-results.txt ]; then
+          cat api/mutation-results.txt >> $GITHUB_STEP_SUMMARY
+        else
+          echo "No se generaron resultados de mutation testing (el archivo no existe)" >> $GITHUB_STEP_SUMMARY
+        fi
         echo '```' >> $GITHUB_STEP_SUMMARY
         echo "" >> $GITHUB_STEP_SUMMARY
         echo "_Generado el: $(date)_" >> $GITHUB_STEP_SUMMARY
