@@ -50,7 +50,7 @@ jobs:
         echo '```' >> $GITHUB_STEP_SUMMARY
         echo "" >> $GITHUB_STEP_SUMMARY
         echo "_Generado el: $(date)_" >> $GITHUB_STEP_SUMMARY
-    
+
     - name: Run mutation tests
       id: mutation
       run: npm run test:mutation 2>&1 | tee mutation-results.txt
