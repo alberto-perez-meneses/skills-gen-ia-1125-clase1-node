@@ -7,6 +7,11 @@ on:
 jobs:
   build-and-publish:
     runs-on: ubuntu-latest
+
+    permissions:
+        contents: read
+        packages: write
+        
     
     steps:
     - name: Checkout code
@@ -20,8 +25,8 @@ jobs:
         password: ${{ secrets.GITHUB_TOKEN }}
     
     - name: Build Docker image
-      run: docker build -t ghcr.io/${{ github.repository_owner }}/api:{{github.sha}}:latest api
+      run: docker build -t ghcr.io/${{ github.repository }}/api:latest api
     
     - name: Push Docker image
-      run: docker push ghcr.io/${{ github.repository_owner }}/api:{{github.sha}}:latest
+      run: docker push ghcr.io/${{ github.repository }}/api:${{github.sha}}:latest
 
