@@ -38,6 +38,7 @@ jobs:
         echo "$TEST_OUTPUT" >> $GITHUB_OUTPUT
         echo "EOF" >> $GITHUB_OUTPUT
       
+        #Generate test summary
     - name: Generate test summary
       if: always()
       run: |
