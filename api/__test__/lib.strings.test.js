@@ -7,7 +7,7 @@ describe('Librería de Strings', () => {
         test('debe invertir una cadena normal', () => {
             // Arrange
             const input = 'hello';
-            const expected = 'olleh1';
+            const expected = 'olleh';
             
             // Act
             const result = reverseString(input);
