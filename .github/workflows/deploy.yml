@@ -41,15 +41,15 @@ jobs:
 
     - name: Pull Docker image
       run: |
-        echo "Pulling image: ghcr.io/${{ github.repository }}/api:latest"
-        docker pull ghcr.io/${{ github.repository }}/api:latest
+        echo "Pulling image: ghcr.io/${{ github.repository }}-node-app/api:latest"
+        docker pull ghcr.io/${{ github.repository }}-node-app/api:latest
         docker images | grep "${{ github.repository }}"
 
     - name: Deploy to Production
       run: |
         echo "Starting deployment to ${{ inputs.environment }}"
         echo "Using deployment method: ${{ inputs.deployment_method }}"
-        echo "Image pulled successfully: ghcr.io/${{ github.repository }}/api:latest"
+        echo "Image pulled successfully: ghcr.io/${{ github.repository }}-node-app/api:latest"
         
         # ============================================
         # EJEMPLOS DE DEPLOYMENT - Descomenta el que necesites
