@@ -1,0 +1,7 @@
+organization=ennovate1225
+projectKey=ennovate1225_ennovate-121225
+serverUrl=https://sonarcloud.io
+serverVersion=8.0.0.77381
+dashboardUrl=https://sonarcloud.io/dashboard?id=ennovate1225_ennovate-121225
+ceTaskId=AZsTAHc9zsDKvbkPjFr8
+ceTaskUrl=https://sonarcloud.io/api/ce/task?id=AZsTAHc9zsDKvbkPjFr8
