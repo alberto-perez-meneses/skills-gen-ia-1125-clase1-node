@@ -6,6 +6,9 @@ const { reverseString, isValidId } = require('./lib/string');
 const RepositoryFactory = require('./src/repositories');
 const { setupGracefulShutdown } = require('./src/utils/graceful-shutdown');
 
+// Middleware para parsear JSON en el cuerpo de las peticiones
+app.use(express.json());
+
 // Configuración de Swagger
 const options = {
     info: {
@@ -22,8 +25,25 @@ const options = {
 
 expressJsDocSwagger(app)(options);
 
-// Crear instancia del repositorio usando Dependency Inversion
+// Crear instancias de repositorios usando Dependency Inversion
 const userRepository = RepositoryFactory.create('sequelize');
+const notesRepository = RepositoryFactory.create('sequelize-notes');
+
+/**
+ * Entidad Note para documentación Swagger
+ * @typedef {object} Note
+ * @property {number} id - Identificador de la nota
+ * @property {string} title - Título de la nota
+ * @property {string} content - Contenido de la nota
+ * @property {string} createdAt - Fecha de creación de la nota
+ */
+
+/**
+ * Payload de creación de nota
+ * @typedef {object} NoteCreateRequest
+ * @property {string} title.required - Título de la nota
+ * @property {string} content - Contenido de la nota
+ */
 
 /**
  * GET /
@@ -82,6 +102,47 @@ app.get('/reverse/:str', (req, res) => {
     const str = req.params.str;
     const reversed = reverseString(str);
     res.send({ original: str, reversed: reversed });
+});
+
+/**
+ * POST /api/notes
+ * @summary Crea una nueva nota y la persiste en la base de datos
+ * @tags Notes
+ * @param {NoteCreateRequest} request.body.required - Datos de la nota a crear
+ * @return {Note} 201 - Nota creada correctamente
+ * @return {object} 400 - Error de validación cuando el título es inválido o inexistente
+ * @return {string} 400.error - Mensaje de error de validación
+ */
+app.post('/api/notes', async (req, res) => {
+    try {
+        const { title, content } = req.body || {};
+
+        // Validaciones para title según NOTES-BE-1
+        if (
+            typeof title !== 'string' ||
+            title.trim().length === 0
+        ) {
+            return res.status(400).json({ error: 'Invalid title' });
+        }
+
+        const createdNote = await notesRepository.createNote({
+            title: title.trim(),
+            content
+        });
+
+        // Mapear created_at a createdAt según criterio del ticket
+        const responseBody = {
+            id: createdNote.id,
+            title: createdNote.title,
+            content: createdNote.content,
+            createdAt: createdNote.created_at
+        };
+
+        return res.status(201).json(responseBody);
+    } catch (error) {
+        console.error('Error creating note:', error);
+        return res.status(500).json({ error: 'Internal Server Error' });
+    }
 });
 
 

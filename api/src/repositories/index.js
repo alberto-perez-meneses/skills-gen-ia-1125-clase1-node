@@ -1,4 +1,5 @@
 const SequelizeRepository = require('./sequelize.repository');
+const SequelizeNotesRepository = require('./sequelize.notes.repository');
 
 /**
  * Factory para crear instancias del repositorio según configuración
@@ -15,6 +16,8 @@ class RepositoryFactory {
     switch (type.toLowerCase()) {
       case 'sequelize':
         return new SequelizeRepository();
+      case 'sequelize-notes':
+        return new SequelizeNotesRepository();
       // Aquí se pueden agregar otras implementaciones:
       // case 'postgres':
       //   return new PostgresRepository();
