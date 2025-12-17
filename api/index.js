@@ -105,6 +105,33 @@ app.get('/reverse/:str', (req, res) => {
 });
 
 /**
+ * GET /api/notes
+ * @summary Obtiene todas las notas de la base de datos
+ * @tags Notes
+ * @return {Array<Note>} 200 - Array de notas. Retorna array vacío si no hay notas
+ * @return {object} 500 - Error interno del servidor
+ * @return {string} 500.error - Mensaje de error
+ */
+app.get('/api/notes', async (req, res) => {
+    try {
+        const notes = await notesRepository.getAllNotes();
+
+        // Mapear created_at a createdAt para consistencia con POST /api/notes
+        const responseBody = notes.map(note => ({
+            id: note.id,
+            title: note.title,
+            content: note.content,
+            createdAt: note.created_at
+        }));
+
+        return res.status(200).json(responseBody);
+    } catch (error) {
+        console.error('Error getting notes:', error);
+        return res.status(500).json({ error: 'Internal Server Error' });
+    }
+});
+
+/**
  * POST /api/notes
  * @summary Crea una nueva nota y la persiste en la base de datos
  * @tags Notes
