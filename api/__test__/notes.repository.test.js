@@ -108,5 +108,130 @@ describe('SequelizeNotesRepository', () => {
     expect(result[1]).toHaveProperty('created_at');
     expect(result[1]).toHaveProperty('updated_at');
   });
+
+  test('updateNote debe actualizar una nota existente y devolver la nota actualizada', async () => {
+    // Arrange
+    const repo = new SequelizeNotesRepository();
+    const mockCreatedAt = new Date('2024-01-01');
+    const mockUpdatedAt = new Date('2024-01-02');
+    
+    const mockUpdatedNoteInstance = {
+      id: 1,
+      title: 'Nota actualizada',
+      content: 'Contenido actualizado',
+      created_at: mockCreatedAt,
+      updated_at: mockUpdatedAt,
+      toJSON: jest.fn(() => ({
+        id: 1,
+        title: 'Nota actualizada',
+        content: 'Contenido actualizado',
+        created_at: mockCreatedAt,
+        updated_at: mockUpdatedAt
+      }))
+    };
+
+    const mockNoteInstance = {
+      id: 1,
+      title: 'Nota original',
+      content: 'Contenido original',
+      created_at: mockCreatedAt,
+      updated_at: mockCreatedAt,
+      update: jest.fn().mockResolvedValue(mockUpdatedNoteInstance)
+    };
+
+    Note.findByPk = jest.fn().mockResolvedValue(mockNoteInstance);
+
+    // Act
+    const result = await repo.updateNote(1, { 
+      title: 'Nota actualizada', 
+      content: 'Contenido actualizado' 
+    });
+
+    // Assert
+    expect(Note.findByPk).toHaveBeenCalledWith(1);
+    expect(mockNoteInstance.update).toHaveBeenCalledWith({
+      title: 'Nota actualizada',
+      content: 'Contenido actualizado'
+    });
+    expect(result).toHaveProperty('id', 1);
+    expect(result).toHaveProperty('title', 'Nota actualizada');
+    expect(result).toHaveProperty('content', 'Contenido actualizado');
+    expect(result).toHaveProperty('updated_at');
+    expect(Note.create).not.toHaveBeenCalled();
+  });
+
+  test('updateNote debe retornar null cuando el id no existe', async () => {
+    // Arrange
+    const repo = new SequelizeNotesRepository();
+    Note.findByPk = jest.fn().mockResolvedValue(null);
+
+    // Act
+    const result = await repo.updateNote(999, { 
+      title: 'Nota actualizada', 
+      content: 'Contenido actualizado' 
+    });
+
+    // Assert
+    expect(Note.findByPk).toHaveBeenCalledWith(999);
+    expect(result).toBeNull();
+    expect(Note.create).not.toHaveBeenCalled();
+  });
+
+  test('updateNote debe lanzar error cuando title es vacío', async () => {
+    // Arrange
+    const repo = new SequelizeNotesRepository();
+    const mockCreatedAt = new Date('2024-01-01');
+    
+    const mockNoteInstance = {
+      id: 1,
+      title: 'Nota original',
+      content: 'Contenido original',
+      created_at: mockCreatedAt,
+      updated_at: mockCreatedAt,
+      update: jest.fn().mockRejectedValue(new Error('Title cannot be empty'))
+    };
+
+    Note.findByPk = jest.fn().mockResolvedValue(mockNoteInstance);
+
+    // Act & Assert
+    await expect(
+      repo.updateNote(1, { title: '', content: 'Contenido' })
+    ).rejects.toThrow('Title cannot be empty');
+    
+    expect(Note.findByPk).toHaveBeenCalledWith(1);
+    expect(mockNoteInstance.update).toHaveBeenCalledWith({
+      title: '',
+      content: 'Contenido'
+    });
+    expect(Note.create).not.toHaveBeenCalled();
+  });
+
+  test('updateNote debe lanzar error cuando title es inexistente', async () => {
+    // Arrange
+    const repo = new SequelizeNotesRepository();
+    const mockCreatedAt = new Date('2024-01-01');
+    
+    const mockNoteInstance = {
+      id: 1,
+      title: 'Nota original',
+      content: 'Contenido original',
+      created_at: mockCreatedAt,
+      updated_at: mockCreatedAt,
+      update: jest.fn().mockRejectedValue(new Error('Title is required'))
+    };
+
+    Note.findByPk = jest.fn().mockResolvedValue(mockNoteInstance);
+
+    // Act & Assert
+    await expect(
+      repo.updateNote(1, { content: 'Contenido sin título' })
+    ).rejects.toThrow('Title is required');
+    
+    expect(Note.findByPk).toHaveBeenCalledWith(1);
+    expect(mockNoteInstance.update).toHaveBeenCalledWith({
+      content: 'Contenido sin título'
+    });
+    expect(Note.create).not.toHaveBeenCalled();
+  });
 });
 

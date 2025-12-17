@@ -36,6 +36,7 @@ const notesRepository = RepositoryFactory.create('sequelize-notes');
  * @property {string} title - Título de la nota
  * @property {string} content - Contenido de la nota
  * @property {string} createdAt - Fecha de creación de la nota
+ * @property {string} updatedAt - Fecha de última actualización de la nota
  */
 
 /**
@@ -77,7 +78,7 @@ app.get('/about/:id', async (req, res) => {
     }
 
     // Usar el repositorio para buscar el usuario en la base de datos
-    const users = await userRepository.findUserById(parseInt(userId));
+    const users = await userRepository.findUserById(Number.parseInt(userId));
 
     // findUserById retorna un array: con datos si existe, vacío si no existe
     if (users.length === 0) {
@@ -168,6 +169,64 @@ app.post('/api/notes', async (req, res) => {
         return res.status(201).json(responseBody);
     } catch (error) {
         console.error('Error creating note:', error);
+        return res.status(500).json({ error: 'Internal Server Error' });
+    }
+});
+
+/**
+ * PUT /api/notes/:id
+ * @summary Actualiza una nota existente
+ * @tags Notes
+ * @param {number} id.path.required - ID de la nota a actualizar
+ * @param {NoteCreateRequest} request.body.required - Datos actualizados de la nota
+ * @return {Note} 200 - Nota actualizada correctamente
+ * @return {object} 400 - Error de validación (ID inválido o título inválido)
+ * @return {string} 400.error - Mensaje de error
+ * @return {object} 404 - Nota no encontrada
+ * @return {string} 404.error - Mensaje de error
+ * @return {object} 500 - Error interno del servidor
+ * @return {string} 500.error - Mensaje de error
+ */
+app.put('/api/notes/:id', async (req, res) => {
+    try {
+        const noteId = req.params.id;
+        const { title, content } = req.body || {};
+
+        // Validar ID
+        if (!isValidId(noteId)) {
+            return res.status(400).json({ error: 'Invalid id format' });
+        }
+
+        // Validaciones para title según NOTES-BE-3
+        if (
+            typeof title !== 'string' ||
+            title.trim().length === 0
+        ) {
+            return res.status(400).json({ error: 'Invalid title' });
+        }
+
+        const updatedNote = await notesRepository.updateNote(Number.parseInt(noteId), {
+            title: title.trim(),
+            content
+        });
+
+        // Si la nota no existe, retornar 404
+        if (updatedNote === null) {
+            return res.status(404).json({ error: 'Note not found' });
+        }
+
+        // Mapear created_at y updated_at a createdAt y updatedAt
+        const responseBody = {
+            id: updatedNote.id,
+            title: updatedNote.title,
+            content: updatedNote.content,
+            createdAt: updatedNote.created_at,
+            updatedAt: updatedNote.updated_at
+        };
+
+        return res.status(200).json(responseBody);
+    } catch (error) {
+        console.error('Error updating note:', error);
         return res.status(500).json({ error: 'Internal Server Error' });
     }
 });
