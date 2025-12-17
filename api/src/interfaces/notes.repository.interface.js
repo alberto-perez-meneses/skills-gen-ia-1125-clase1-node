@@ -11,6 +11,14 @@ class NotesRepositoryInterface {
   async createNote(noteData) {
     throw new Error('createNote must be implemented by subclass');
   }
+
+  /**
+   * Obtiene todas las notas
+   * @returns {Promise<Array<Object>>} Array de objetos planos con id, title, content, created_at, updated_at
+   */
+  async getAllNotes() {
+    throw new Error('getAllNotes must be implemented by subclass');
+  }
 }
 
 module.exports = NotesRepositoryInterface;

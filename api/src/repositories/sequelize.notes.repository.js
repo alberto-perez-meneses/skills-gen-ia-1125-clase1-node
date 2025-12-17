@@ -21,6 +21,19 @@ class SequelizeNotesRepository extends NotesRepositoryInterface {
     const noteEntity = NoteEntity.fromSequelize(sequelizeNote);
     return noteEntity.toJSON();
   }
+
+  /**
+   * Obtiene todas las notas de la base de datos
+   * @returns {Promise<Array<Object>>} Array de objetos planos representando las notas
+   */
+  async getAllNotes() {
+    const sequelizeNotes = await Note.findAll();
+    
+    return sequelizeNotes.map(sequelizeNote => {
+      const noteEntity = NoteEntity.fromSequelize(sequelizeNote);
+      return noteEntity.toJSON();
+    });
+  }
 }
 
 module.exports = SequelizeNotesRepository;
